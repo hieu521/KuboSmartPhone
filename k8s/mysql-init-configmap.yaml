@@ -1,0 +1,35 @@
+# Script chạy một lần khi volume MySQL trống (docker-entrypoint-initdb.d).
+# MySQL 8.0.29+ hỗ trợ CREATE USER IF NOT EXISTS.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-sql
+  namespace: javaspring
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS auth;
+    CREATE DATABASE IF NOT EXISTS demo;
+    CREATE DATABASE IF NOT EXISTS department;
+    CREATE DATABASE IF NOT EXISTS product;
+    CREATE DATABASE IF NOT EXISTS inventory;
+    CREATE DATABASE IF NOT EXISTS orders;
+
+    CREATE USER IF NOT EXISTS 'auth'@'%' IDENTIFIED BY 'auth123';
+    GRANT ALL PRIVILEGES ON auth.* TO 'auth'@'%';
+
+    CREATE USER IF NOT EXISTS 'demo'@'%' IDENTIFIED BY 'demo123';
+    GRANT ALL PRIVILEGES ON demo.* TO 'demo'@'%';
+
+    CREATE USER IF NOT EXISTS 'department'@'%' IDENTIFIED BY 'department123';
+    GRANT ALL PRIVILEGES ON department.* TO 'department'@'%';
+
+    CREATE USER IF NOT EXISTS 'product'@'%' IDENTIFIED BY 'product123';
+    GRANT ALL PRIVILEGES ON product.* TO 'product'@'%';
+
+    CREATE USER IF NOT EXISTS 'inventory'@'%' IDENTIFIED BY 'inventory123';
+    GRANT ALL PRIVILEGES ON inventory.* TO 'inventory'@'%';
+
+    CREATE USER IF NOT EXISTS 'orders'@'%' IDENTIFIED BY 'orders123';
+    GRANT ALL PRIVILEGES ON orders.* TO 'orders'@'%';
+
+    FLUSH PRIVILEGES;

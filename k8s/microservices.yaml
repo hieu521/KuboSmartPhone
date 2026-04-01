@@ -1,0 +1,462 @@
+# DB / Redis / RabbitMQ qua Service DNS trong namespace; Gateway proxy tới URL cố định (không Eureka).
+# Build image trước: xem k8s/README.md và scripts/k8s-build-images.ps1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: javaspring/auth-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+          env:
+            - name: MYSQL_AUTH_HOST
+              value: mysql
+            - name: MYSQL_AUTH_PORT
+              value: "3306"
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            # Spring Boot 4 prefers spring.data.redis.*; set explicit env vars for safety.
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+          readinessProbe:
+            tcpSocket:
+              port: 8083
+            initialDelaySeconds: 50
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: auth-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: user-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: javaspring/user-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/demo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: SPRING_DATASOURCE_USERNAME
+              value: demo
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: demo123
+          readinessProbe:
+            tcpSocket:
+              port: 8081
+            initialDelaySeconds: 50
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: user-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: department-service
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: department-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: department-service
+    spec:
+      containers:
+        - name: department-service
+          image: javaspring/department-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/department?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: SPRING_DATASOURCE_USERNAME
+              value: department
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: department123
+          readinessProbe:
+            tcpSocket:
+              port: 8082
+            initialDelaySeconds: 50
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: department-service
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: department-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: product-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: product-service
+    spec:
+      containers:
+        - name: product-service
+          image: javaspring/product-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8086
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/product?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: SPRING_DATASOURCE_USERNAME
+              value: product
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: product123
+          readinessProbe:
+            tcpSocket:
+              port: 8086
+            initialDelaySeconds: 50
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: product-service
+  ports:
+    - port: 8086
+      targetPort: 8086
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inventory-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inventory-service
+    spec:
+      containers:
+        - name: inventory-service
+          image: javaspring/inventory-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8087
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/inventory?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: SPRING_DATASOURCE_USERNAME
+              value: inventory
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: inventory123
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            # Some Spring components read spring.redis.* directly; keep both forms to avoid fallback to localhost.
+            - name: SPRING_REDIS_HOST
+              value: redis
+            - name: SPRING_REDIS_PORT
+              value: "6379"
+            - name: SPRING_APPLICATION_JSON
+              value: '{"spring":{"redis":{"host":"redis","port":6379}}}'
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Dspring.redis.host=redis -Dspring.redis.port=6379"
+            - name: APP_SEED_ENABLED
+              value: "false"
+          readinessProbe:
+            tcpSocket:
+              port: 8087
+            initialDelaySeconds: 50
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: inventory-service
+  ports:
+    - port: 8087
+      targetPort: 8087
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: order-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: javaspring/order-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8088
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/orders?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+            - name: SPRING_DATASOURCE_USERNAME
+              value: orders
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: orders123
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: PRODUCT_SERVICE_BASE_URL
+              value: http://product-service:8086
+          readinessProbe:
+            tcpSocket:
+              port: 8088
+            initialDelaySeconds: 60
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: order-service
+  ports:
+    - port: 8088
+      targetPort: 8088
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promo-service
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: promo-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: promo-service
+    spec:
+      containers:
+        - name: promo-service
+          image: javaspring/promo-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8085
+          env:
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: AUTH_SERVICE_BASE_URL
+              value: http://auth-service:8083
+          readinessProbe:
+            tcpSocket:
+              port: 8085
+            initialDelaySeconds: 50
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: promo-service
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: promo-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: notification-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: javaspring/notification-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: notification-mail-config
+            - secretRef:
+                name: notification-mail-secret
+          env:
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+          readinessProbe:
+            tcpSocket:
+              port: 8084
+            initialDelaySeconds: 50
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: notification-service
+  ports:
+    - port: 8084
+      targetPort: 8084
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apigateway
+  namespace: javaspring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: apigateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: apigateway
+    spec:
+      containers:
+        - name: apigateway
+          image: javaspring/apigateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_GATEWAY_DOWNSTREAM_USER_SERVICE
+              value: "http://user-service:8081"
+            - name: APP_GATEWAY_DOWNSTREAM_AUTH_SERVICE
+              value: "http://auth-service:8083"
+            - name: APP_GATEWAY_DOWNSTREAM_DEPARTMENT_SERVICE
+              value: "http://department-service:8082"
+            - name: APP_GATEWAY_DOWNSTREAM_ORDER_SERVICE
+              value: "http://order-service:8088"
+            - name: APP_GATEWAY_DOWNSTREAM_PROMO_SERVICE
+              value: "http://promo-service:8085"
+            - name: APP_GATEWAY_DOWNSTREAM_INVENTORY_SERVICE
+              value: "http://inventory-service:8087"
+            # Bucket4j distributed rate limit (Redis + Lettuce)
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apigateway
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: apigateway
+  ports:
+    - port: 8080
+      targetPort: 8080

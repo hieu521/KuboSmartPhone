@@ -1,0 +1,108 @@
+# Strategic merge: imagePullPolicy Always khi kéo từ Docker Hub.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: auth-service
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: user-service
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: department-service
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: department-service
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: product-service
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: inventory-service
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: order-service
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: promo-service
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: promo-service
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: notification-service
+          imagePullPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apigateway
+  namespace: javaspring
+spec:
+  template:
+    spec:
+      containers:
+        - name: apigateway
+          imagePullPolicy: Always

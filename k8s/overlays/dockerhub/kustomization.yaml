@@ -1,0 +1,46 @@
+# Docker Hub: một repo nhiều tag — santoskubo/javaspringboot:<service>-v1
+# Push:  .\scripts\docker-hub-push.ps1 -Tag v1
+# Deploy: .\scripts\k8s-apply-dockerhub.ps1
+#   (hoặc: kubectl kustomize k8s/overlays/dockerhub --load-restrictor LoadRestrictionsNone | kubectl apply -f -)
+# Khi đổi version: cập nhật -Tag và các newTag bên dưới (cùng hậu tố, ví dụ v2).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Không dùng `resources: ../../` (tránh cycle với k8s/kustomization.yaml); giữ danh sách đồng bộ với k8s/kustomization.yaml.
+resources:
+  - ../../namespace.yaml
+  - ../../mysql-init-configmap.yaml
+  - ../../notification-mail-configmap.yaml
+  - ../../mysql.yaml
+  - ../../redis-rabbitmq.yaml
+  - ../../microservices.yaml
+  - ../../ingress.yaml
+images:
+  - name: javaspring/apigateway
+    newName: santoskubo/javaspringboot
+    newTag: apigateway-v1
+  - name: javaspring/auth-service
+    newName: santoskubo/javaspringboot
+    newTag: auth-service-v1
+  - name: javaspring/user-service
+    newName: santoskubo/javaspringboot
+    newTag: user-service-v1
+  - name: javaspring/department-service
+    newName: santoskubo/javaspringboot
+    newTag: department-service-v1
+  - name: javaspring/product-service
+    newName: santoskubo/javaspringboot
+    newTag: product-service-v1
+  - name: javaspring/inventory-service
+    newName: santoskubo/javaspringboot
+    newTag: inventory-service-v1
+  - name: javaspring/order-service
+    newName: santoskubo/javaspringboot
+    newTag: order-service-v1
+  - name: javaspring/promo-service
+    newName: santoskubo/javaspringboot
+    newTag: promo-service-v1
+  - name: javaspring/notification-service
+    newName: santoskubo/javaspringboot
+    newTag: notification-service-v1
+patches:
+  - path: imagepull-always-deployments.yaml

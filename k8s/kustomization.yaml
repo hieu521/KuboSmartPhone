@@ -1,0 +1,14 @@
+# Triển khai một lần: kubectl apply -k k8s/
+# Thứ tự apply do Kustomize xử lý; ConfigMap mysql-init phải tồn tại trước Pod MySQL (cùng lệnh apply là đủ).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - mysql-init-configmap.yaml
+  - notification-mail-configmap.yaml
+  - mysql.yaml
+  - redis-rabbitmq.yaml
+  # Eureka: không bắt buộc — Gateway dùng URI cố định tới K8s Service (xem APIGateway application.yml)
+  # - eureka.yaml
+  - microservices.yaml
+  - ingress.yaml

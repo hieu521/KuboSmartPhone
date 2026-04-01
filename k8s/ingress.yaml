@@ -1,0 +1,24 @@
+# Cần cài Ingress Controller (nginx): xem k8s/README.md
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: javaspring-api
+  namespace: javaspring
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # Bật WebSocket nếu client gọi qua gateway tới service có WS
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: api.javaspring.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: apigateway
+                port:
+                  number: 8080

@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+
+# Build outputs
+**/target/
+**/build/
+*.log
+
+# IDE / OS local files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

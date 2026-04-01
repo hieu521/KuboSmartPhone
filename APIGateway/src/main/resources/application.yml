@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: apigateway
+
+# Move APIGateway's own SpringDoc off default paths.
+# This avoids clash with auth-service swagger-ui which loads /v3/api-docs* as absolute URLs.
+springdoc:
+  api-docs:
+    path: /gateway/v3/api-docs
+  swagger-ui:
+    path: /gateway/swagger-ui.html
+
+# URL backend — local: localhost; Kubernetes: set APP_GATEWAY_DOWNSTREAM_* (xem GatewayDownstreamProperties)
+app:
+  gateway:
+    downstream:
+      user-service: ${APP_GATEWAY_DOWNSTREAM_USER_SERVICE:http://localhost:8081}
+      auth-service: ${APP_GATEWAY_DOWNSTREAM_AUTH_SERVICE:http://localhost:8083}
+      department-service: ${APP_GATEWAY_DOWNSTREAM_DEPARTMENT_SERVICE:http://localhost:8082}
+      order-service: ${APP_GATEWAY_DOWNSTREAM_ORDER_SERVICE:http://localhost:8088}
+      promo-service: ${APP_GATEWAY_DOWNSTREAM_PROMO_SERVICE:http://localhost:8085}
+      inventory-service: ${APP_GATEWAY_DOWNSTREAM_INVENTORY_SERVICE:http://localhost:8087}
+
+# --- Eureka (tắt khi dùng Kubernetes Service DNS + URI cố định ở Gateway) ---
+# eureka:
+#   client:
+#     service-url:
+#       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}

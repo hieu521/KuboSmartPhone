@@ -1,0 +1,287 @@
+# Docker Compose chung – hiện chỉ chạy DB (MySQL)
+# Chạy từ thư mục gốc: docker compose up -d
+# Khi cần chạy thêm Eureka / Gateway / Services: bỏ comment các block tương ứng.
+
+services:
+  # --- Redis (dùng cho refresh token + các cache/dedup sau này) ---
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - redis_data:/data
+
+  # --- RabbitMQ (dùng cho campaign notify) ---
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbit
+      RABBITMQ_DEFAULT_PASS: rabbit123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # --- MySQL riêng cho AuthService ---
+  mysql-auth:
+    image: mysql:8.0
+    container_name: mysql-auth
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_DATABASE: auth
+      MYSQL_USER: auth
+      MYSQL_PASSWORD: auth123
+      MYSQL_ROOT_PASSWORD: root123
+    volumes:
+      - mysql_auth_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-proot123",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- MySQL cho UserService ---
+  mysql-user:
+    image: mysql:8.0
+    container_name: mysql-user
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: demo
+      MYSQL_USER: demo
+      MYSQL_PASSWORD: demo123
+      MYSQL_ROOT_PASSWORD: root123
+    volumes:
+      - mysql_user_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-proot123",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- MySQL cho DepartmentService ---
+  mysql-department:
+    image: mysql:8.0
+    container_name: mysql-department
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_DATABASE: department
+      MYSQL_USER: department
+      MYSQL_PASSWORD: department123
+      MYSQL_ROOT_PASSWORD: root123
+    volumes:
+      - mysql_department_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-proot123",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- MySQL cho ProductService ---
+  mysql-product:
+    image: mysql:8.0
+    container_name: mysql-product
+    ports:
+      - "3310:3306"
+    environment:
+      MYSQL_DATABASE: product
+      MYSQL_USER: product
+      MYSQL_PASSWORD: product123
+      MYSQL_ROOT_PASSWORD: root123
+    volumes:
+      - mysql_product_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-proot123",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- MySQL cho InventoryService ---
+  mysql-inventory:
+    image: mysql:8.0
+    container_name: mysql-inventory
+    ports:
+      - "3311:3306"
+    environment:
+      MYSQL_DATABASE: inventory
+      MYSQL_USER: inventory
+      MYSQL_PASSWORD: inventory123
+      MYSQL_ROOT_PASSWORD: root123
+    volumes:
+      - mysql_inventory_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-proot123",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- MySQL cho OrderService ---
+  mysql-order:
+    image: mysql:8.0
+    container_name: mysql-order
+    ports:
+      - "3312:3306"
+    environment:
+      MYSQL_DATABASE: orders
+      MYSQL_USER: orders
+      MYSQL_PASSWORD: orders123
+      MYSQL_ROOT_PASSWORD: root123
+    volumes:
+      - mysql_order_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-proot123",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- Các service app (tạm tắt, chỉ cần DB) - bỏ comment khi cần chạy ---
+  # eureka:
+  #   build: ./EurekaService
+  #   container_name: eureka
+  #   ports: ["8761:8761"]
+  #   environment:
+  #     SERVER_PORT: 8761
+  #     SPRING_APPLICATION_NAME: EurekaService
+  #   restart: unless-stopped
+
+  # user-service:
+  #   build: ./UserService
+  #   container_name: user-service
+  #   ports: ["8081:8081"]
+  #   environment:
+  #     SERVER_PORT: 8081
+  #     SPRING_APPLICATION_NAME: user-service
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql-user:3306/demo?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+  #     SPRING_DATASOURCE_USERNAME: demo
+  #     SPRING_DATASOURCE_PASSWORD: demo123
+  #   depends_on:
+  #     mysql-user: { condition: service_healthy }
+  #   restart: unless-stopped
+
+  # department-service:
+  #   build: ./DepartmentService
+  #   container_name: department-service
+  #   ports: ["8082:8082"]
+  #   environment:
+  #     SERVER_PORT: 8082
+  #     SPRING_APPLICATION_NAME: department-service
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql-department:3306/department?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+  #     SPRING_DATASOURCE_USERNAME: department
+  #     SPRING_DATASOURCE_PASSWORD: department123
+  #   depends_on:
+  #     mysql-department: { condition: service_healthy }
+  #   restart: unless-stopped
+
+  # apigateway:
+  #   build: ./APIGateway
+  #   container_name: apigateway
+  #   ports: ["8080:8080"]
+  #   environment:
+  #     SERVER_PORT: 8080
+  #     SPRING_APPLICATION_NAME: apigateway
+  #     EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+  #   depends_on: [eureka]
+  #   restart: unless-stopped
+
+  # --- NotificationService (mail + WebSocket) - load .env qua env_file ---
+  notification-service:
+    build: ./NotificationService
+    container_name: notification-service
+    ports:
+      - "8084:8084"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    env_file:
+      - .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_user_data:
+  mysql_department_data:
+  mysql_auth_data:
+  rabbitmq_data:
+  redis_data:
+  mysql_product_data:
+  mysql_inventory_data:
+  mysql_order_data:

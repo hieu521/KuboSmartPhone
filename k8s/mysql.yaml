@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: javaspring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: javaspring
+  labels:
+    app.kubernetes.io/name: mysql
+spec:
+  replicas: 1
+  # PVC is ReadWriteOnce -> cannot mount by 2 pods during rolling update.
+  # Use Recreate to avoid 2 MySQL pods fighting over the same volume.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mysql
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          # Minikube (Docker) hay bi thieu RAM -> MySQL bi OOMKilled.
+          # Giam bo nho va gioi han tai nguyen de pod on dinh.
+          command: ["mysqld"]
+          args:
+            - "--innodb-buffer-pool-size=128M"
+            - "--innodb-log-buffer-size=16M"
+            - "--max_connections=100"
+            - "--table_open_cache=400"
+            - "--performance_schema=OFF"
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root123
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "768Mi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot123"]
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+        - name: init-sql
+          configMap:
+            name: mysql-init-sql
+            items:
+              - key: init.sql
+                path: 01-init.sql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: javaspring
+spec:
+  selector:
+    app.kubernetes.io/name: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
