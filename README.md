@@ -40,6 +40,21 @@ Vi du:
 - Order tao su kien -> Notification nhan va gui email/thong bao.
 - Cac queue trong he thong duoc cau hinh qua env (nhu `order.created`, `order.result`, `campaign.applied`...).
 
+### 3.1 Worker classes (consumer/listener) theo service
+
+- `OrderService`
+  - `OrderService/src/main/java/com/example/order/mq/OrderCreatedListener.java`
+    - `@RabbitListener(queues = "${app.rabbit.order-created}")`
+    - Vai tro worker: nhan message tao don, ghi DB, tinh ket qua, publish ket qua sang queue `order.result`.
+  - `OrderService/src/main/java/com/example/order/mq/OrderResultListener.java`
+    - `@RabbitListener(queues = "${app.rabbit.order-result}")`
+    - Vai tro worker: nhan ket qua don hang va complete cho luong doi ket qua.
+
+- `NotificationService`
+  - `NotificationService/src/main/java/com/example/notification/mq/CampaignAppliedListener.java`
+    - `@RabbitListener(queues = "${app.rabbit.queue.campaign-applied}")`
+    - Vai tro worker: nhan su kien campaign, push WebSocket va gui email.
+
 ## 4) Redis trong du an dung de lam gi?
 
 - Luu du lieu tam/co TTL (token/cache).
@@ -207,6 +222,21 @@ It splits business domains into independent services to improve maintainability,
 - Decouples synchronous API calls from background processing.
 - Helps isolate failures and scale consumers independently.
 - Supports event-driven flows (order events, campaign events, notifications).
+
+### 3.1 Worker classes (consumer/listener) by service
+
+- `OrderService`
+  - `OrderService/src/main/java/com/example/order/mq/OrderCreatedListener.java`
+    - `@RabbitListener(queues = "${app.rabbit.order-created}")`
+    - Worker role: consume order-created events, persist/confirm order data, publish to `order.result`.
+  - `OrderService/src/main/java/com/example/order/mq/OrderResultListener.java`
+    - `@RabbitListener(queues = "${app.rabbit.order-result}")`
+    - Worker role: consume final order result and complete waiting flow.
+
+- `NotificationService`
+  - `NotificationService/src/main/java/com/example/notification/mq/CampaignAppliedListener.java`
+    - `@RabbitListener(queues = "${app.rabbit.queue.campaign-applied}")`
+    - Worker role: consume campaign events, push WebSocket, send email notifications.
 
 ## 4) Redis usage in this project
 
